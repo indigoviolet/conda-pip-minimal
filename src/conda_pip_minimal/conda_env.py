@@ -14,22 +14,22 @@ class CondaEnvSpec:
     def __call__(self) -> List[str]:
         return ["--prefix" if self.is_prefix else "--name", self.name]
 
-    def get_python(self) -> Path:
-        return self.get_prefix() / "bin" / "python"
+    async def get_python(self) -> Path:
+        return (await self.get_prefix()) / "bin" / "python"
 
-    def get_prefix(self) -> Path:
+    async def get_prefix(self) -> Path:
         if self.is_prefix:
             return Path(self.name)
         else:
-            return Path(conda_env_export(self)["prefix"])
+            return Path((await conda_env_export(self))["prefix"])
 
     @classmethod
-    def get_name(cls) -> str:
-        return conda_env_export()["name"]
+    async def get_name(cls) -> str:
+        return (await conda_env_export())["name"]
 
 
-def conda_env_export(env_spec: Optional[CondaEnvSpec] = None):
-    return CONDA.json(
+async def conda_env_export(env_spec: Optional[CondaEnvSpec] = None):
+    return await CONDA.json(
         "env",
         "export",
         env_spec() if env_spec is not None else [],

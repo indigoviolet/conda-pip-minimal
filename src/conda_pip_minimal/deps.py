@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from .cmd import Cmd
 import re
-import subprocess
 import semver
+import subprocess
+from typing import List
 
 
 class EnsureCmdError(RuntimeError):
@@ -23,9 +24,9 @@ def extract_semver(input: str) -> str:
         raise EnsureCmdError(f"Cannot parse semver from {input=}")
 
 
-def ensure_cmd_version(cmd, args, min_version: str) -> str:
+async def ensure_cmd_version(cmd: Cmd, args: List[str], min_version: str) -> str:
     try:
-        version = extract_semver(cmd(args))
+        version = extract_semver(await cmd(args))
     except subprocess.CalledProcessError:
         raise EnsureCmdError(f"Could not ensure {cmd=} {args=}")
 
@@ -46,9 +47,9 @@ CONDA_TREE_MIN_VERSION: str = "1.0.4"
 PIPDEPTREE_MIN_VERSION: str = "2.3.1"
 
 
-def ensure_conda_tree(min_version: str = CONDA_TREE_MIN_VERSION):
-    return ensure_cmd_version(CONDA_TREE, ["--version"], min_version=min_version)
+async def ensure_conda_tree(min_version: str = CONDA_TREE_MIN_VERSION):
+    return await ensure_cmd_version(CONDA_TREE, ["--version"], min_version=min_version)
 
 
-def ensure_pipdeptree(min_version: str = PIPDEPTREE_MIN_VERSION):
-    return ensure_cmd_version(PIPDEPTREE, ["--version"], min_version=min_version)
+async def ensure_pipdeptree(min_version: str = PIPDEPTREE_MIN_VERSION):
+    return await ensure_cmd_version(PIPDEPTREE, ["--version"], min_version=min_version)

@@ -11,13 +11,16 @@ PyYAML = "^6.0"
 typer = "^0.6.1"
 semver = "^2.13.0"
 more-itertools = "^8.14.0"
+trio = "^0.22.0"
 
 
 [tool.poetry.dev-dependencies]
 ipython = "^8.5.0"
 snoop = "^0.4.2"
+trio-typing = "^0.7.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
 

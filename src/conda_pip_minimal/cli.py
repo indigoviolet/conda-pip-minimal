@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from .version import RelaxLevel
-from pathlib import Path
-import typer
-from typing import List, Optional
-
 from .conda_env import CondaEnvSpec
 from .min import ComputeMinimalSet
+from .version import RelaxLevel
+from functools import partial
+from pathlib import Path
+import trio
+import typer
+from typing import List, Optional
 
 
 def main(
@@ -36,8 +37,13 @@ def main(
         always_include=set(include),
         always_exclude=set(exclude),
     )
-    ms = cms.compute()
-    print(ms.export(include_channel=channel, relax=relax))
+
+    trio.run(partial(compute_and_export, cms, channel=channel, relax=relax))
+
+
+async def compute_and_export(cms: ComputeMinimalSet, channel: bool, relax: RelaxLevel):
+    ms = await cms.compute()
+    print(await ms.export(include_channel=channel, relax=relax))
 
 
 if __name__ == "__main__":
