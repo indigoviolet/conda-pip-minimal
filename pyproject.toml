@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "conda-pip-minimal"
+version = "0.1.0"
+description = "Conda+Pip minimal env exports"
+authors = ["Venky Iyer <indigoviolet@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+PyYAML = "^6.0"
+typer = "^0.6.1"
+semver = "^2.13.0"
+more-itertools = "^8.14.0"
+
+
+[tool.poetry.dev-dependencies]
+ipython = "^8.5.0"
+snoop = "^0.4.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
