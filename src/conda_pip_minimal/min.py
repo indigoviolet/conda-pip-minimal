@@ -4,13 +4,13 @@ from dataclasses import dataclass, field
 import io
 from typing import Dict, List, Optional, Set, Union
 import yaml
-from trio_future import run, gather
-import trio
+import subprocess
+from loguru import logger
 
 from .conda_env import CondaEnvSpec
 from .deps import CONDA, CONDA_TREE, PIPDEPTREE, ensure_conda_tree, ensure_pipdeptree
-from .version import RelaxLevel, version_string
 from .result_capture import open_capturing_nursery
+from .version import RelaxLevel, version_string
 
 
 @dataclass
@@ -51,9 +51,13 @@ async def conda_leaves(env_spec: Optional[CondaEnvSpec] = None) -> List[str]:
 async def conda_list(
     env_spec: Optional[CondaEnvSpec] = None,
 ) -> Dict[str, CondaPackage]:
-    output = await CONDA.json(
-        "list", env_spec() if env_spec is not None else [], "--json"
-    )
+    try:
+        output = await CONDA.json(
+            "list", env_spec() if env_spec is not None else [], "--json"
+        )
+    except subprocess.CalledProcessError:
+        logger.error("Conda failed to list environment")
+        raise
     return {
         p["name"]: CondaPackage(p["name"], p["version"], p["channel"]) for p in output
     }

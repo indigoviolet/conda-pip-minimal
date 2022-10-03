@@ -11,7 +11,10 @@ import trio
 import typer
 from typing import List, Optional
 
+app = typer.Typer(add_completion=False)
 
+
+@app.command()
 def main(
     prefix: Optional[Path] = typer.Option(
         None, "--prefix", "-p", help="Conda env prefix"
@@ -51,7 +54,3 @@ def main(
 async def compute_and_export(cms: ComputeMinimalSet, channel: bool, relax: RelaxLevel):
     ms = await cms.compute()
     print(await ms.export(include_channel=channel, relax=relax))
-
-
-if __name__ == "__main__":
-    typer.run(main)
