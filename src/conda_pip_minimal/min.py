@@ -4,10 +4,13 @@ from dataclasses import dataclass, field
 import io
 from typing import Dict, List, Optional, Set, Union
 import yaml
+from trio_future import run, gather
+import trio
 
 from .conda_env import CondaEnvSpec
 from .deps import CONDA, CONDA_TREE, PIPDEPTREE, ensure_conda_tree, ensure_pipdeptree
 from .version import RelaxLevel, version_string
+from .result_capture import open_capturing_nursery
 
 
 @dataclass
@@ -75,13 +78,31 @@ class ComputeMinimalSet:
     always_include: Set[str] = field(default_factory=set)
     always_exclude: Set[str] = field(default_factory=set)
 
-    async def compute(self) -> MinimalSet:
-        await ensure_conda_tree()
-        if self.include_pip:
-            await ensure_pipdeptree()
+    async def _pipdeptree_leaves(self):
+        await ensure_pipdeptree()
+        python = (
+            str(await self.env_spec.get_python()) if self.env_spec is not None else None
+        )
+        return await pipdeptree_leaves(python=python)
 
-        clvs = await conda_leaves(self.env_spec)
-        clst = await conda_list(self.env_spec)
+    async def _conda_leaves(self):
+        await ensure_conda_tree()
+        return await conda_leaves(self.env_spec)
+
+    async def compute(self) -> MinimalSet:
+        async with open_capturing_nursery() as N:
+            clvs_fut = N.start_soon(self._conda_leaves)
+            clst_fut = N.start_soon(conda_list, self.env_spec)
+            pls_fut = (
+                N.start_soon(self._pipdeptree_leaves) if self.include_pip else None
+            )
+
+        clvs = clvs_fut.result
+        clst = clst_fut.result
+
+        # await ensure_conda_tree()
+        # clvs = await conda_leaves(self.env_spec)
+        # clst = await conda_list(self.env_spec)
 
         conda_min_pkg_names = (set(clvs) | self.always_include) - self.always_exclude
         conda_pkgs = [
@@ -90,14 +111,9 @@ class ComputeMinimalSet:
         ]
         ms = MinimalSet(env_spec=self.env_spec, conda_packages=conda_pkgs)
 
-        if self.include_pip:
-            pls = await pipdeptree_leaves(
-                python=(
-                    str(await self.env_spec.get_python())
-                    if self.env_spec is not None
-                    else None
-                )
-            )
+        if pls_fut is not None:
+            # pls = await self._pipdeptree_leaves()
+            pls = pls_fut.result
             # Filter pipdeptree_leaves to packages that are installed by pip,
             # according to conda, since by default it will include
             # conda-installed packages

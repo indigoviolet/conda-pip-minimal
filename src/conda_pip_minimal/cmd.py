@@ -7,6 +7,8 @@ from typing import List
 import ast
 import trio
 
+from loguru import logger
+
 
 async def run_cmd(args) -> str:
     proc = await trio.run_process(args, capture_stdout=True, check=True)  # type: ignore
@@ -19,7 +21,10 @@ class Cmd:
     args: List[str] = field(default_factory=list)
 
     async def __call__(self, *args) -> str:
-        return await run_cmd(self.construct_args(args))
+        logger.debug(f"Starting {self.binary=} {self.args=} {args=}")
+        result = await run_cmd(self.construct_args(args))
+        logger.debug(f"Finished {self.binary=} {self.args=} {args=}")
+        return result
 
     def construct_args(self, *args) -> List[str]:
         return list(collapse([self.binary, self.args, args]))
