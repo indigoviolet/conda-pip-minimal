@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import io
+from loguru import logger
+import subprocess
+import sys
 from typing import Dict, List, Optional, Set, Union
 import yaml
-import subprocess
-from loguru import logger
 
 from .conda_env import CondaEnvSpec
 from .deps import CONDA, CONDA_TREE, PIPDEPTREE, ensure_conda_tree, ensure_pipdeptree
@@ -85,7 +86,9 @@ class ComputeMinimalSet:
     async def _pipdeptree_leaves(self):
         await ensure_pipdeptree()
         python = (
-            str(await self.env_spec.get_python()) if self.env_spec is not None else None
+            str(await self.env_spec.get_python())
+            if self.env_spec is not None
+            else sys.executable
         )
         return await pipdeptree_leaves(python=python)
 

@@ -1,9 +1,17 @@
 [tool.poetry]
 name = "conda-pip-minimal"
-version = "0.1.0"
+version = "0.1.2"
 description = "Conda+Pip minimal env exports"
 authors = ["Venky Iyer <indigoviolet@gmail.com>"]
 license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/indigoviolet/conda-pip-minimal"
+keywords = ["packaging", "conda", "pip", "environment.yaml"]
+classifiers = [
+            'Intended Audience :: Developers',
+            'Intended Audience :: Science/Research',
+            'Topic :: Software Development :: Build Tools'
+            ]
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -26,4 +34,4 @@ build-backend = "poetry.core.masonry.api"
 
 
 [tool.poetry.scripts]
-conda-pip-minimal = 'conda_pip_minimal.cli:app'
+conda-cpm = 'conda_pip_minimal.cli:app'

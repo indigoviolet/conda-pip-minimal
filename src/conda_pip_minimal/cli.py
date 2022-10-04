@@ -13,6 +13,14 @@ from typing import List, Optional
 
 app = typer.Typer(add_completion=False)
 
+__version__ = "0.1.2"
+
+
+def version_callback(value: bool):
+    if value:
+        print(__version__)
+        raise typer.Exit()
+
 
 @app.command()
 def main(
@@ -22,10 +30,15 @@ def main(
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Conda env name"),
     pip: bool = typer.Option(True, help="Include pip dependencies"),
     relax: RelaxLevel = typer.Option("full"),
-    include: List[str] = typer.Option(["python", "pip"]),
-    exclude: List[str] = typer.Option([]),
+    include: List[str] = typer.Option(
+        ["python", "pip"], help="Packages to always include"
+    ),
+    exclude: List[str] = typer.Option([], help="Packages to always exclude"),
     channel: bool = typer.Option(False, help="Add channel to conda dependencies"),
     debug: bool = False,
+    version: Optional[bool] = typer.Option(
+        None, "--version", callback=version_callback
+    ),
 ):
     if prefix is not None and name is not None:
         print(f"Exactly one of --prefix or --name must be provided {prefix=} {name=}")
