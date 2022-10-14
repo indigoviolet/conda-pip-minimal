@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from .deps import CONDA
 from dataclasses import dataclass
+from more_itertools import first
 from pathlib import Path
 from typing import List
-from more_itertools import first
 
 
 @dataclass
@@ -15,10 +15,8 @@ class CondaEnvSpec:
     @classmethod
     async def current(cls) -> CondaEnvSpec:
         info = await conda_info()
-        if "active_prefix" not in info:
-            raise RuntimeError(
-                "No active conda environment, and none specified in --prefix or --name"
-            )
+        if info.get("active_prefix") is None:
+            raise RuntimeError("No active conda environment found (or specified)")
 
         if info["active_prefix_name"] == info["active_prefix"]:
             return CondaEnvSpec(info["active_prefix"], is_prefix=True)

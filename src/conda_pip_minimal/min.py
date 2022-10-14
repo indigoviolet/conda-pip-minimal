@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import io
-from loguru import logger
-import subprocess
-from typing import Dict, List, Optional, Set, Union
+
 from ruamel.yaml import YAML
+from typing import Dict, List, Optional, Set, Union
 
 from .conda_env import CondaEnvSpec
 from .deps import CONDA, CONDA_TREE, PIPDEPTREE, ensure_conda_tree, ensure_pipdeptree
 from .result_capture import open_capturing_nursery
 from .version import RelaxLevel, version_string
+from .logging import logger
 
 
 @dataclass
@@ -47,11 +47,7 @@ async def conda_leaves(env_spec: CondaEnvSpec) -> List[str]:
 
 
 async def conda_list(env_spec: CondaEnvSpec) -> Dict[str, CondaPackage]:
-    try:
-        output = await CONDA.json("list", env_spec(), "--json")
-    except subprocess.CalledProcessError:
-        logger.error("Conda failed to list environment")
-        raise
+    output = await CONDA.json("list", env_spec(), "--json")
     return {
         p["name"]: CondaPackage(p["name"], p["version"], p["channel"]) for p in output
     }
@@ -85,11 +81,17 @@ class ComputeMinimalSet:
         if self.env_spec is None:
             self.env_spec = await CondaEnvSpec.current()
 
-        assert self.env_spec is not None
+        if self.env_spec is None:
+            raise RuntimeError("Could not identify conda environment")
 
         async with open_capturing_nursery() as N:
+            try:
+                clst = await conda_list(self.env_spec)
+            except BaseException as e:
+                logger.debug(f"{self.env_spec=}")
+                raise RuntimeError(f"Invalid conda environment") from e
+
             clvs_fut = N.start_soon(self._conda_leaves, self.env_spec)
-            clst_fut = N.start_soon(conda_list, self.env_spec)
             pls_fut = (
                 N.start_soon(self._pipdeptree_leaves, self.env_spec)
                 if self.include_pip
@@ -97,7 +99,6 @@ class ComputeMinimalSet:
             )
 
         clvs = clvs_fut.result
-        clst = clst_fut.result
 
         conda_min_pkg_names = (set(clvs) | self.always_include) - self.always_exclude
         conda_pkgs = [

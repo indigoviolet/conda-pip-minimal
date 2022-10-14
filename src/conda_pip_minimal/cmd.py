@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import ast
 from dataclasses import dataclass, field
 import json
 from more_itertools import collapse
-from typing import List
-import ast
 import trio
+from typing import List
 
-from loguru import logger
+from .logging import logger
 
 
 async def run_cmd(args) -> str:
@@ -29,7 +29,21 @@ class Cmd:
         return list(collapse([self.binary, self.args, args]))
 
     async def json(self, *args):
-        return json.loads(await self(*args))
+        result = await self(*args)
+        try:
+            return json.loads(result)
+        except:
+            logger.exception(
+                f"Unable to parse JSON from cmd {self.binary=} {self.args=}"
+            )
+            raise
 
     async def literal(self, *args):
-        return ast.literal_eval(await self(*args))
+        result = await self(*args)
+        try:
+            return ast.literal_eval(result)
+        except:
+            logger.exception(
+                f"Unable to parse literal from cmd {self.binary=} {self.args=}"
+            )
+            raise

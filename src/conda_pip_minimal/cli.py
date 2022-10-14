@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from .conda_env import CondaEnvSpec
+from .logging import logger, configure_logger
 from .min import ComputeMinimalSet
 from .version import RelaxLevel
 from functools import partial
 from importlib.metadata import version
-from loguru import logger
 from pathlib import Path
 import sys
 import trio
@@ -45,41 +45,42 @@ def main(
     channel: bool = typer.Option(
         False, "--channel", "-c", help="Add channel to conda dependencies"
     ),
-    debug: bool = typer.Option(False, "--debug"),
+    debug: int = typer.Option(0, "--debug", "-d", count=True),
     version: Optional[bool] = typer.Option(
         None, "--version", callback=version_callback
     ),
 ):
-    if prefix is not None and name is not None:
-        print(f"Exactly one of --prefix or --name must be provided {prefix=} {name=}")
-        raise typer.Exit()
+    try:
+        configure_logger(debug)
 
-    logger.configure(
-        handlers=[{"sink": sys.stderr, "level": ("DEBUG" if debug else "WARNING")}]
-    )
+        if prefix is not None and name is not None:
+            raise RuntimeError(
+                f"Exactly one of --prefix or --name must be provided {prefix=} {name=}"
+            )
 
-    env_spec: Optional[CondaEnvSpec] = None
-    if prefix is not None or name is not None:
-        env_spec = CondaEnvSpec(
-            name=str(prefix or name), is_prefix=(prefix is not None)
+        env_spec: Optional[CondaEnvSpec] = None
+        if prefix is not None or name is not None:
+            env_spec = CondaEnvSpec(
+                name=str(prefix or name), is_prefix=(prefix is not None)
+            )
+
+        cms = ComputeMinimalSet(
+            env_spec=env_spec,
+            include_pip=pip,
+            always_include=set(include),
+            always_exclude=set(exclude),
         )
-
-    cms = ComputeMinimalSet(
-        env_spec=env_spec,
-        include_pip=pip,
-        always_include=set(include),
-        always_exclude=set(exclude),
-    )
-
-    trio.run(
-        partial(
-            compute_and_export,
-            cms,
-            channel=channel,
-            relax=relax,
-            export_name=export_name,
+        trio.run(
+            partial(
+                compute_and_export,
+                cms,
+                channel=channel,
+                relax=relax,
+                export_name=export_name,
+            )
         )
-    )
+    except BaseException as e:
+        logger.exception(f"Error! ({e})")
 
 
 async def compute_and_export(

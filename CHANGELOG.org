@@ -1,4 +1,8 @@
 
+* 0.1.5
+
+- Better error and more debug messages, logging
+
 * 0.1.4
 
 - Bug in cli args
