@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Optional
+from enum import Enum
 import semver
-from enum import Enum, auto
+from typing import Optional
 
 
 class RelaxLevel(Enum):

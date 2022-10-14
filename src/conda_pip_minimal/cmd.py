@@ -21,9 +21,8 @@ class Cmd:
     args: List[str] = field(default_factory=list)
 
     async def __call__(self, *args) -> str:
-        logger.debug(f"Starting {self.binary=} {self.args=} {args=}")
         result = await run_cmd(self.construct_args(args))
-        logger.debug(f"Finished {self.binary=} {self.args=} {args=}")
+        logger.debug(f"Ran {self.binary=} {self.args=} {args=}")
         return result
 
     def construct_args(self, *args) -> List[str]:

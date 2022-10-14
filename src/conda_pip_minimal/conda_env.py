@@ -3,13 +3,27 @@ from __future__ import annotations
 from .deps import CONDA
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List
+from more_itertools import first
 
 
 @dataclass
 class CondaEnvSpec:
     name: str
     is_prefix: bool = False
+
+    @classmethod
+    async def current(cls) -> CondaEnvSpec:
+        info = await conda_info()
+        if "active_prefix" not in info:
+            raise RuntimeError(
+                "No active conda environment, and none specified in --prefix or --name"
+            )
+
+        if info["active_prefix_name"] == info["active_prefix"]:
+            return CondaEnvSpec(info["active_prefix"], is_prefix=True)
+        else:
+            return CondaEnvSpec(info["active_prefix_name"], is_prefix=False)
 
     def __call__(self) -> List[str]:
         return ["--prefix" if self.is_prefix else "--name", self.name]
@@ -23,16 +37,18 @@ class CondaEnvSpec:
         else:
             return Path((await conda_env_export(self))["prefix"])
 
-    @classmethod
-    async def get_name(cls) -> str:
-        return (await conda_env_export())["name"]
+    def export_name(self):
+        if not self.is_prefix:
+            return self.name
+        else:
+            return first(
+                [p for p in reversed(Path(self.name).parts) if not p.startswith(".")]
+            )
 
 
-async def conda_env_export(env_spec: Optional[CondaEnvSpec] = None):
-    return await CONDA.json(
-        "env",
-        "export",
-        env_spec() if env_spec is not None else [],
-        "--no-builds",
-        "--json",
-    )
+async def conda_env_export(env_spec: CondaEnvSpec):
+    return await CONDA.json("env", "export", env_spec(), "--no-builds", "--json")
+
+
+async def conda_info():
+    return await CONDA.json("info", "--json")

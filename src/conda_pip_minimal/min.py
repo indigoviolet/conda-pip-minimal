@@ -4,9 +4,8 @@ from dataclasses import dataclass, field
 import io
 from loguru import logger
 import subprocess
-import sys
 from typing import Dict, List, Optional, Set, Union
-import yaml
+from ruamel.yaml import YAML
 
 from .conda_env import CondaEnvSpec
 from .deps import CONDA, CONDA_TREE, PIPDEPTREE, ensure_conda_tree, ensure_pipdeptree
@@ -43,19 +42,13 @@ class PipPackage:
         return f"{self.name}{version_string(self.version, op='==', how=relax)}"
 
 
-async def conda_leaves(env_spec: Optional[CondaEnvSpec] = None) -> List[str]:
-    return await CONDA_TREE.literal(
-        env_spec() if env_spec is not None else [], "leaves"
-    )
+async def conda_leaves(env_spec: CondaEnvSpec) -> List[str]:
+    return await CONDA_TREE.literal(env_spec(), "leaves")
 
 
-async def conda_list(
-    env_spec: Optional[CondaEnvSpec] = None,
-) -> Dict[str, CondaPackage]:
+async def conda_list(env_spec: CondaEnvSpec) -> Dict[str, CondaPackage]:
     try:
-        output = await CONDA.json(
-            "list", env_spec() if env_spec is not None else [], "--json"
-        )
+        output = await CONDA.json("list", env_spec(), "--json")
     except subprocess.CalledProcessError:
         logger.error("Conda failed to list environment")
         raise
@@ -64,12 +57,8 @@ async def conda_list(
     }
 
 
-async def pipdeptree_leaves(python: Optional[str]) -> Dict[str, PipPackage]:
-    output = await PIPDEPTREE.json(
-        ["--python", python] if python is not None else [],
-        "--local-only",
-        "--json-tree",
-    )
+async def pipdeptree_leaves(python: str) -> Dict[str, PipPackage]:
+    output = await PIPDEPTREE.json(["--python", python], "--local-only", "--json-tree")
     return {
         p["package_name"]: PipPackage(p["package_name"], p["installed_version"])
         for p in output
@@ -83,33 +72,32 @@ class ComputeMinimalSet:
     always_include: Set[str] = field(default_factory=set)
     always_exclude: Set[str] = field(default_factory=set)
 
-    async def _pipdeptree_leaves(self):
+    async def _pipdeptree_leaves(self, env_spec: CondaEnvSpec):
         await ensure_pipdeptree()
-        python = (
-            str(await self.env_spec.get_python())
-            if self.env_spec is not None
-            else sys.executable
-        )
+        python = str(await env_spec.get_python())
         return await pipdeptree_leaves(python=python)
 
-    async def _conda_leaves(self):
+    async def _conda_leaves(self, env_spec: CondaEnvSpec):
         await ensure_conda_tree()
-        return await conda_leaves(self.env_spec)
+        return await conda_leaves(env_spec)
 
     async def compute(self) -> MinimalSet:
+        if self.env_spec is None:
+            self.env_spec = await CondaEnvSpec.current()
+
+        assert self.env_spec is not None
+
         async with open_capturing_nursery() as N:
-            clvs_fut = N.start_soon(self._conda_leaves)
+            clvs_fut = N.start_soon(self._conda_leaves, self.env_spec)
             clst_fut = N.start_soon(conda_list, self.env_spec)
             pls_fut = (
-                N.start_soon(self._pipdeptree_leaves) if self.include_pip else None
+                N.start_soon(self._pipdeptree_leaves, self.env_spec)
+                if self.include_pip
+                else None
             )
 
         clvs = clvs_fut.result
         clst = clst_fut.result
-
-        # await ensure_conda_tree()
-        # clvs = await conda_leaves(self.env_spec)
-        # clst = await conda_list(self.env_spec)
 
         conda_min_pkg_names = (set(clvs) | self.always_include) - self.always_exclude
         conda_pkgs = [
@@ -119,7 +107,6 @@ class ComputeMinimalSet:
         ms = MinimalSet(env_spec=self.env_spec, conda_packages=conda_pkgs)
 
         if pls_fut is not None:
-            # pls = await self._pipdeptree_leaves()
             pls = pls_fut.result
             # Filter pipdeptree_leaves to packages that are installed by pip,
             # according to conda, since by default it will include
@@ -137,20 +124,35 @@ class ComputeMinimalSet:
 
 @dataclass
 class MinimalSet:
-    env_spec: Optional[CondaEnvSpec]
+    env_spec: CondaEnvSpec
     conda_packages: List[CondaPackage]
     pip_packages: List[PipPackage] = field(default_factory=list)
 
+    def __post_init__(self):
+        self.yaml = YAML()
+        self.yaml.default_flow_style = False
+        self.yaml.indent(sequence=4, mapping=2, offset=2)
+
     async def export(
-        self, *, include_channel: bool = False, relax: RelaxLevel = RelaxLevel.FULL
+        self,
+        *,
+        include_channel: bool = False,
+        relax: RelaxLevel = RelaxLevel.FULL,
+        export_name: Optional[str] = None,
     ) -> str:
-        yml_data = await self.get_yml_data(include_channel=include_channel, relax=relax)
+        yml_data = await self.get_yml_data(
+            include_channel=include_channel, relax=relax, export_name=export_name
+        )
         stream = io.StringIO()
-        yaml.dump(yml_data, stream)
+        self.yaml.dump(yml_data, stream)
         return stream.getvalue()
 
     async def get_yml_data(
-        self, *, include_channel: bool, relax: RelaxLevel = RelaxLevel.FULL
+        self,
+        *,
+        include_channel: bool,
+        relax: RelaxLevel = RelaxLevel.FULL,
+        export_name: Optional[str] = None,
     ) -> Dict:
         deps: List[Union[str, Dict[str, List[str]]]] = [
             p.export(include_channel=include_channel, relax=relax)
@@ -159,11 +161,9 @@ class MinimalSet:
         if len(self.pip_packages):
             pip_deps = {"pip": [p.export(relax=relax) for p in self.pip_packages]}
             deps.append(pip_deps)
-        return {"name": (await self._name()), "dependencies": deps}
-
-    async def _name(self) -> str:
-        return (
-            self.env_spec.name
-            if self.env_spec is not None
-            else (await CondaEnvSpec.get_name())
-        )
+        return {
+            "name": export_name
+            if export_name is not None
+            else self.env_spec.export_name(),
+            "dependencies": deps,
+        }

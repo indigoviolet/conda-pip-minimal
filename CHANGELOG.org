@@ -1,0 +1,7 @@
+
+* 0.1.3
+
+- Fix detection of Python version, works with pipx installs
+- dynamic versioning
+- Guess env name from prefix or use --export-name
+- Use ruamel.yaml for more control over indentation

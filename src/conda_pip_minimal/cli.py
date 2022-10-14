@@ -4,6 +4,7 @@ from .conda_env import CondaEnvSpec
 from .min import ComputeMinimalSet
 from .version import RelaxLevel
 from functools import partial
+from importlib.metadata import version
 from loguru import logger
 from pathlib import Path
 import sys
@@ -13,25 +14,28 @@ from typing import List, Optional
 
 app = typer.Typer(add_completion=False)
 
-__version__ = "0.1.2"
-
 
 def version_callback(value: bool):
     if value:
-        print(__version__)
+        print(version("conda-pip-minimal"))
         raise typer.Exit()
 
 
 @app.command()
 def main(
     prefix: Optional[Path] = typer.Option(
-        None, "--prefix", "-p", help="Conda env prefix"
+        None, "--prefix", "-p", help="Target conda env prefix"
     ),
-    name: Optional[str] = typer.Option(None, "--name", "-n", help="Conda env name"),
+    name: Optional[str] = typer.Option(
+        None, "--name", "-n", help="Target conda env name"
+    ),
     pip: bool = typer.Option(True, help="Include pip dependencies"),
     relax: RelaxLevel = typer.Option("full"),
     include: List[str] = typer.Option(
         ["python", "pip"], help="Packages to always include"
+    ),
+    export_name: Optional[str] = typer.Option(
+        None, "--export-name", "-e", help="Name to use in export"
     ),
     exclude: List[str] = typer.Option([], help="Packages to always exclude"),
     channel: bool = typer.Option(False, help="Add channel to conda dependencies"),
@@ -61,9 +65,24 @@ def main(
         always_exclude=set(exclude),
     )
 
-    trio.run(partial(compute_and_export, cms, channel=channel, relax=relax))
+    trio.run(
+        partial(
+            compute_and_export,
+            cms,
+            channel=channel,
+            relax=relax,
+            export_name=export_name,
+        )
+    )
 
 
-async def compute_and_export(cms: ComputeMinimalSet, channel: bool, relax: RelaxLevel):
+async def compute_and_export(
+    cms: ComputeMinimalSet,
+    channel: bool,
+    relax: RelaxLevel,
+    export_name: Optional[str] = None,
+):
     ms = await cms.compute()
-    print(await ms.export(include_channel=channel, relax=relax))
+    print(
+        await ms.export(export_name=export_name, include_channel=channel, relax=relax)
+    )
