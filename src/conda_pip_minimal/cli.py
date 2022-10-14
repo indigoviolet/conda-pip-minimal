@@ -45,7 +45,13 @@ def main(
     channel: bool = typer.Option(
         False, "--channel", "-c", help="Add channel to conda dependencies"
     ),
-    debug: int = typer.Option(0, "--debug", "-d", count=True),
+    debug: int = typer.Option(
+        0,
+        "--debug",
+        "-d",
+        count=True,
+        help="Use --debug multiple times for more verbosity",
+    ),
     version: Optional[bool] = typer.Option(
         None, "--version", callback=version_callback
     ),
