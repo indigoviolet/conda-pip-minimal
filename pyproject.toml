@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "conda-pip-minimal"
-version = "0.1.3"
+version = "0.1.4"
 description = "Conda+Pip minimal env exports"
 authors = ["Venky Iyer <indigoviolet@gmail.com>"]
 license = "MIT"

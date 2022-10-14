@@ -30,16 +30,22 @@ def main(
         None, "--name", "-n", help="Target conda env name"
     ),
     pip: bool = typer.Option(True, help="Include pip dependencies"),
-    relax: RelaxLevel = typer.Option("full"),
+    relax: RelaxLevel = typer.Option(
+        "full", "--relax", "-r", help="Version stringency"
+    ),
     include: List[str] = typer.Option(
-        ["python", "pip"], help="Packages to always include"
+        ["python", "pip"], "--include", "-i", help="Packages to always include"
+    ),
+    exclude: List[str] = typer.Option(
+        [], "--exclude", "-x", help="Packages to always exclude"
     ),
     export_name: Optional[str] = typer.Option(
         None, "--export-name", "-e", help="Name to use in export"
     ),
-    exclude: List[str] = typer.Option([], help="Packages to always exclude"),
-    channel: bool = typer.Option(False, help="Add channel to conda dependencies"),
-    debug: bool = False,
+    channel: bool = typer.Option(
+        False, "--channel", "-c", help="Add channel to conda dependencies"
+    ),
+    debug: bool = typer.Option(False, "--debug"),
     version: Optional[bool] = typer.Option(
         None, "--version", callback=version_callback
     ),
