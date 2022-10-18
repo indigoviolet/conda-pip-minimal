@@ -1,45 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import io
-
-from ruamel.yaml import YAML
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set
 
 from .conda_env import CondaEnvSpec
 from .deps import CONDA, CONDA_TREE, PIPDEPTREE, ensure_conda_tree, ensure_pipdeptree
-from .result_capture import open_capturing_nursery
-from .version import RelaxLevel, version_string
+from .export import CondaPackage, PipPackage, YAMLExport
 from .logging import logger
-
-
-@dataclass
-class CondaPackage:
-    name: str
-    version: Optional[str]
-    channel: Optional[str]
-
-    def export(
-        self, *, include_channel: bool = False, relax: RelaxLevel = RelaxLevel.FULL
-    ) -> str:
-        return "".join(
-            [
-                f"{self.channel}::"
-                if (include_channel and self.channel is not None)
-                else "",
-                self.name,
-                version_string(self.version, op="=", how=relax),
-            ]
-        )
-
-
-@dataclass
-class PipPackage:
-    name: str
-    version: str
-
-    def export(self, *, relax: RelaxLevel = RelaxLevel.FULL) -> str:
-        return f"{self.name}{version_string(self.version, op='==', how=relax)}"
+from .result_capture import open_capturing_nursery
 
 
 async def conda_leaves(env_spec: CondaEnvSpec) -> List[str]:
@@ -77,7 +45,7 @@ class ComputeMinimalSet:
         await ensure_conda_tree()
         return await conda_leaves(env_spec)
 
-    async def compute(self) -> MinimalSet:
+    async def compute(self) -> YAMLExport:
         if self.env_spec is None:
             self.env_spec = await CondaEnvSpec.current()
 
@@ -105,7 +73,7 @@ class ComputeMinimalSet:
             clst.get(c, CondaPackage(c, version=None, channel=None))
             for c in conda_min_pkg_names
         ]
-        ms = MinimalSet(env_spec=self.env_spec, conda_packages=conda_pkgs)
+        ms = YAMLExport(env_spec=self.env_spec, conda_packages=conda_pkgs)
 
         if pls_fut is not None:
             pls = pls_fut.result
@@ -121,50 +89,3 @@ class ComputeMinimalSet:
             ]
 
         return ms
-
-
-@dataclass
-class MinimalSet:
-    env_spec: CondaEnvSpec
-    conda_packages: List[CondaPackage]
-    pip_packages: List[PipPackage] = field(default_factory=list)
-
-    def __post_init__(self):
-        self.yaml = YAML()
-        self.yaml.default_flow_style = False
-        self.yaml.indent(sequence=4, mapping=2, offset=2)
-
-    async def export(
-        self,
-        *,
-        include_channel: bool = False,
-        relax: RelaxLevel = RelaxLevel.FULL,
-        export_name: Optional[str] = None,
-    ) -> str:
-        yml_data = await self.get_yml_data(
-            include_channel=include_channel, relax=relax, export_name=export_name
-        )
-        stream = io.StringIO()
-        self.yaml.dump(yml_data, stream)
-        return stream.getvalue()
-
-    async def get_yml_data(
-        self,
-        *,
-        include_channel: bool,
-        relax: RelaxLevel = RelaxLevel.FULL,
-        export_name: Optional[str] = None,
-    ) -> Dict:
-        deps: List[Union[str, Dict[str, List[str]]]] = [
-            p.export(include_channel=include_channel, relax=relax)
-            for p in self.conda_packages
-        ]
-        if len(self.pip_packages):
-            pip_deps = {"pip": [p.export(relax=relax) for p in self.pip_packages]}
-            deps.append(pip_deps)
-        return {
-            "name": export_name
-            if export_name is not None
-            else self.env_spec.export_name(),
-            "dependencies": deps,
-        }
