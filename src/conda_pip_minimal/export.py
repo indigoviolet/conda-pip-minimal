@@ -4,7 +4,7 @@ from .conda_env import CondaEnvSpec
 from .version import RelaxLevel, version_string
 from dataclasses import dataclass, field
 import io
-from ruamel.yaml import YAML
+from ruamel.yaml import YAML  # type: ignore
 from typing import Dict, List, Optional, TypeVar, Union
 
 
@@ -40,7 +40,7 @@ class PipPackage:
 @dataclass
 class YAMLExport:
     env_spec: CondaEnvSpec
-    conda_packages: List[CondaPackage]
+    conda_packages: List[CondaPackage] = field(default_factory=list)
     pip_packages: List[PipPackage] = field(default_factory=list)
 
     def __post_init__(self):

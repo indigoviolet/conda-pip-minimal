@@ -3,4 +3,5 @@
 - [X] name: should not be the prefix; since it breaks mamba env update --file
 - [X] pipdeptree: uses the wrong python when it is running from pipx
 - [X] Sort dependencies to put Python, pip on top, sort others alphabetically
+- [X] -included pypi packages should show in pypi, even if they are conda package's dependency
 - export in pip install format (==) ; mamba install format (so that we can do --freeze-installed)

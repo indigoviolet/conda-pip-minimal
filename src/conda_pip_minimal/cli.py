@@ -73,7 +73,7 @@ def main(
         cms = ComputeMinimalSet(
             env_spec=env_spec,
             include_pip=pip,
-            always_include=set(include),
+            always_include=set(include) | set(["python", "pip"]),
             always_exclude=set(exclude),
         )
         trio.run(

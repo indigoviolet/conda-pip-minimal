@@ -1,4 +1,9 @@
 
+* 0.1.8
+
+- Fix bug with handling of -i pip-installed packages, previously they might be shown as a Conda dependency
+- Always include [python, pip], even with other -i packages. -x overrides
+
 * 0.1.7
 
 - Sort packages

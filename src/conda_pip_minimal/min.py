@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 from .conda_env import CondaEnvSpec
 from .deps import CONDA, CONDA_TREE, PIPDEPTREE, ensure_conda_tree, ensure_pipdeptree
@@ -36,12 +36,12 @@ class ComputeMinimalSet:
     always_include: Set[str] = field(default_factory=set)
     always_exclude: Set[str] = field(default_factory=set)
 
-    async def _pipdeptree_leaves(self, env_spec: CondaEnvSpec):
+    async def _pipdeptree_leaves(self, env_spec: CondaEnvSpec) -> Dict[str, PipPackage]:
         await ensure_pipdeptree()
         python = str(await env_spec.get_python())
         return await pipdeptree_leaves(python=python)
 
-    async def _conda_leaves(self, env_spec: CondaEnvSpec):
+    async def _conda_leaves(self, env_spec: CondaEnvSpec) -> List[str]:
         await ensure_conda_tree()
         return await conda_leaves(env_spec)
 
@@ -66,26 +66,59 @@ class ComputeMinimalSet:
                 else None
             )
 
-        clvs = clvs_fut.result
+        min_conda_pkgs, min_pip_pkgs = self._get_min_packages(
+            conda_list=clst,
+            conda_leaves=clvs_fut.result,
+            pip_leaves=pls_fut.result if pls_fut is not None else None,
+        )
+        return YAMLExport(
+            env_spec=self.env_spec,
+            conda_packages=min_conda_pkgs,
+            pip_packages=min_pip_pkgs,
+        )
 
-        conda_min_pkg_names = (set(clvs) | self.always_include) - self.always_exclude
-        conda_pkgs = [
-            clst.get(c, CondaPackage(c, version=None, channel=None))
-            for c in conda_min_pkg_names
-        ]
-        ms = YAMLExport(env_spec=self.env_spec, conda_packages=conda_pkgs)
+    def _get_min_packages(
+        self,
+        *,
+        conda_list: Dict[str, CondaPackage],
+        conda_leaves: List[str],
+        pip_leaves: Optional[Dict[str, PipPackage]],
+    ) -> Tuple[List[CondaPackage], List[PipPackage]]:
+        # First add conda packages - excludes
+        conda_packages = {
+            c: conda_list[c] for c in conda_leaves if c not in self.always_exclude
+        }
 
-        if pls_fut is not None:
-            pls = pls_fut.result
+        # Then add pip packages - excludes
+        pip_packages: Dict[str, PipPackage] = {}
+        if pip_leaves is not None:
             # Filter pipdeptree_leaves to packages that are installed by pip,
             # according to conda, since by default it will include
             # conda-installed packages
-            ms.pip_packages = [
-                v
-                for k, v in pls.items()
-                if k not in self.always_exclude
-                and k in clst
-                and clst[k].channel == "pypi"
-            ]
+            pip_leaves = {
+                k: v
+                for k, v in pip_leaves.items()
+                if k in conda_list and conda_list[k].channel == "pypi"
+            }
+            pip_packages = {
+                k: v for k, v in pip_leaves.items() if k not in self.always_exclude
+            }
 
-        return ms
+        # Finally, add always_include packages, choosing the appropriate source
+        for p in (
+            self.always_include
+            - set(conda_packages.keys())
+            - set(pip_packages.keys())
+            - self.always_exclude
+        ):
+            if p not in conda_list:
+                raise RuntimeError(f"-i package {p} not found in `conda list`")
+
+            pkg = conda_list[p]
+            if pkg.channel == "pypi":
+                assert pkg.version is not None
+                pip_packages[p] = PipPackage(p, pkg.version)
+            else:
+                conda_packages[p] = pkg
+
+        return list(conda_packages.values()), list(pip_packages.values())
