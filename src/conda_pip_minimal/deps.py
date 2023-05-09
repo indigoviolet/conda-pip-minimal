@@ -1,10 +1,10 @@
-from __future__ import annotations
-
-from .cmd import Cmd
 import re
-import semver
 import subprocess
 from typing import List
+
+import semver
+
+from .cmd import Cmd
 
 
 class EnsureCmdError(RuntimeError):

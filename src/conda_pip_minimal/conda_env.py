@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from .deps import CONDA
 from dataclasses import dataclass
-from more_itertools import first
 from pathlib import Path
 from typing import List
+
+from more_itertools import first
+
+from .deps import CONDA
 
 
 @dataclass
@@ -39,8 +41,13 @@ class CondaEnvSpec:
         if not self.is_prefix:
             return self.name
         else:
+            # first directory part above ".venv", hopefully
             return first(
-                [p for p in reversed(Path(self.name).parts) if not p.startswith(".")]
+                [
+                    p
+                    for p in reversed(Path(self.name).resolve().parts)
+                    if not p.startswith(".")
+                ]
             )
 
 

@@ -1,12 +1,11 @@
-from __future__ import annotations
-
 # Adapted from https://gist.github.com/arthur-tacca/32c9b5fa81294850cabc890f4a898a4e
 
 from collections.abc import Generator, Iterable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-import trio
 from typing import Any, Awaitable, Callable, Optional
+
+import trio
 
 ArgType = Any
 ResultType = Any

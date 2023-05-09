@@ -1,11 +1,10 @@
-from __future__ import annotations
+import io
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, TypeVar, Union
 
+from ruamel.yaml import YAML  # type: ignore
 from .conda_env import CondaEnvSpec
 from .version import RelaxLevel, version_string
-from dataclasses import dataclass, field
-import io
-from ruamel.yaml import YAML  # type: ignore
-from typing import Dict, List, Optional, TypeVar, Union
 
 
 @dataclass

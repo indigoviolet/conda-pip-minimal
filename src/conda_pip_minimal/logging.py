@@ -1,8 +1,7 @@
-from __future__ import annotations
-
-from loguru import logger
 import sys
 from typing import Any, Dict
+
+from loguru import logger
 
 # https://github.com/Delgan/loguru/blob/0f89a58d3279d31915224f329e90255e9c7f5449/loguru/_defaults.py#L31
 # https://github.com/Delgan/loguru/issues/592
