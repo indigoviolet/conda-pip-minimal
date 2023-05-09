@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 
-import semver
+from semver.version import Version
 
 
 class RelaxLevel(Enum):
@@ -21,8 +21,8 @@ def version_string(
     if how == RelaxLevel.FULL:
         return f"{op}{version}"
 
-    parsed_version = semver.parse(version)
+    parsed_version = Version.parse(version)
     if how == RelaxLevel.MINOR:
-        return f'{op}{parsed_version["major"]}.{parsed_version["minor"]}.*'
+        return f"{op}{parsed_version.major}.{parsed_version.minor}.*"
     elif how == RelaxLevel.MAJOR:
-        return f'{op}{parsed_version["major"]}.*'
+        return f"{op}{parsed_version.major}.*"

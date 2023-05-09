@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
   "typer~=0.6.1",
-  "semver",
+  "semver>=3.0.0",
   "more-itertools",
   "trio~=0.22.0",
   "loguru",

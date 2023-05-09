@@ -1,4 +1,9 @@
 
+* 0.2.0
+
+- Upgrade semver and fix deprecations
+- Update min-dependencies for conda-cpm and pipdeptree
+
 * 0.1.10
 
 - Convert to hatch

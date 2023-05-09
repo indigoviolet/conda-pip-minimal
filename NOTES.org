@@ -5,6 +5,16 @@
 - [X] Sort dependencies to put Python, pip on top, sort others alphabetically
 - [X] -included pypi packages should show in pypi, even if they are conda package's dependency
 - [X] Handle bug in heuristic name selection for prefix conda environments
+- [X] Upgrade to new conda tree
 - export in pip install format (==) ; mamba install format (so that we can do --freeze-installed)
 - [ ] Handle git+https urls etc: https://github.com/conda/conda/blob/main/tests/conda_env/support/advanced-pip/environment.yml
 - [ ] Handle conda being function not an executable (accept path to "conda_exe"?)
+
+
+
+* Dev Notes
+
+- ~hatch env prune~ and ~hatch env create~ are required to get the project installed
+  in dev mode, for ~hatch run conda-cpm~ to reflect the current state. But this
+  will break the conda env and make it not recognized. ~just pipx_install~ is the
+  workaround to test current local state.

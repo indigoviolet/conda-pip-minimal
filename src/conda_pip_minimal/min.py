@@ -9,7 +9,7 @@ from .result_capture import open_capturing_nursery
 
 
 async def conda_leaves(env_spec: CondaEnvSpec) -> List[str]:
-    return await CONDA_TREE.literal(env_spec(), "leaves")
+    return await CONDA_TREE.json(env_spec(), "leaves", "--json")
 
 
 async def conda_list(env_spec: CondaEnvSpec) -> Dict[str, CondaPackage]:
