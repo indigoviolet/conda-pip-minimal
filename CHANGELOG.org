@@ -1,4 +1,17 @@
 
+* 0.1.10
+
+- Convert to hatch
+- Remove `from __future__ import annotations`
+- Add pre-commit config
+- some formatting of files
+
+* 0.1.9
+
+Bugfixes:
+
+- Fix heuristic name selection for prefix conda environments
+
 * 0.1.8
 
 - Fix bug with handling of -i pip-installed packages, previously they might be shown as a Conda dependency

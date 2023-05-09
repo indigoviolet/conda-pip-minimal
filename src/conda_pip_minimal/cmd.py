@@ -1,11 +1,10 @@
-from __future__ import annotations
-
 import ast
-from dataclasses import dataclass, field
 import json
-from more_itertools import collapse
-import trio
+from dataclasses import dataclass, field
 from typing import List
+
+import trio
+from more_itertools import collapse
 
 from .logging import logger
 

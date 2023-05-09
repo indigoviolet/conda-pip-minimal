@@ -1,16 +1,15 @@
-from __future__ import annotations
-
-from .conda_env import CondaEnvSpec
-from .logging import logger, configure_logger
-from .min import ComputeMinimalSet
-from .version import RelaxLevel
 from functools import partial
 from importlib.metadata import version
 from pathlib import Path
-import sys
+from typing import List, Optional
+
 import trio
 import typer
-from typing import List, Optional
+
+from .conda_env import CondaEnvSpec
+from .logging import configure_logger, logger
+from .min import ComputeMinimalSet
+from .version import RelaxLevel
 
 app = typer.Typer(add_completion=False)
 
@@ -56,6 +55,9 @@ def main(
         None, "--version", callback=version_callback
     ),
 ):
+    """
+    Compute minimal set of conda and pip dependencies for a given environment
+    """
     try:
         configure_logger(debug)
 

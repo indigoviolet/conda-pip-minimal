@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
 from .conda_env import CondaEnvSpec
-from .deps import CONDA, CONDA_TREE, PIPDEPTREE, ensure_conda_tree, ensure_pipdeptree
+from .deps import CONDA, CONDA_TREE, ensure_conda_tree, ensure_pipdeptree, PIPDEPTREE
 from .export import CondaPackage, PipPackage, YAMLExport
 from .logging import logger
 from .result_capture import open_capturing_nursery
