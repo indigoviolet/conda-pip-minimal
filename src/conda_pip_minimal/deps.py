@@ -32,7 +32,7 @@ async def ensure_cmd_version(
     except subprocess.CalledProcessError:
         raise EnsureCmdError(f"Could not ensure {cmd=} {args=}")
 
-    if not version.is_compatible(min_version):
+    if not min_version.is_compatible(version):
         raise EnsureCmdError(
             f"Could not ensure {cmd=}, {min_version=}, found {version=}"
         )
