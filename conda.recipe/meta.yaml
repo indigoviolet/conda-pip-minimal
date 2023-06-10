@@ -1,0 +1,57 @@
+{% set name = "conda-pip-minimal" %}
+{% set version = "0.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+# Local Build Test
+  path: ../
+# PyPi Sourced Build - Comment Local Build Section and update version and sha256 after publishing to PyPi
+  #url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/conda_pip_minimal-{{ version }}.tar.gz
+  #sha256: b27138eb96ffa1c57c7d1c2a423b373baaa22e70ce1086fe8538dbe276566867
+
+build:
+  entry_points:
+    - conda-cpm = conda_pip_minimal.cli:app
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7.0,<4.0.0
+    - hatchling
+    - pip
+  run:
+    - python >=3.7.0,<4.0.0
+    - typer >=0.6.1,<0.10.0
+    - semver >=3.0.0,<4.0.0
+    - more-itertools >=8.14.0,<10.0.0
+    - trio >=0.22.0,<0.23.0
+    - loguru >=0.6.0,<0.8.0
+    - importlib-metadata >=5.0.0,<7.0.0
+    - ruamel.yaml >=0.17.21,<0.18.0
+
+test:
+  imports:
+    - conda_pip_minimal
+  commands:
+    - pip check
+    - conda-cpm --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/indigoviolet/conda-pip-minimal
+  summary: Conda+Pip minimal env exports
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - indigoviolet
+
+
