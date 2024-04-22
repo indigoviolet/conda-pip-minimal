@@ -2,7 +2,7 @@
 name = "conda-pip-minimal"
 description = "Conda+Pip minimal env exports"
 authors = [{ name = "Venky Iyer", email = "indigoviolet@gmail.com" }]
-license = "MIT"
+license = {file = "LICENSE.txt"}
 requires-python = ">=3.7"
 dynamic = ["version"]
 readme = "README.md"
@@ -12,6 +12,7 @@ classifiers = [
   'Intended Audience :: Science/Research',
   'Topic :: Software Development :: Build Tools'
 ]
+
 dependencies = [
   "typer>=0.6.1,<0.10.0",
   "semver>=3.0.0,<4.0.0",
@@ -19,7 +20,8 @@ dependencies = [
   "trio>=0.22.0,<0.23.0",
   "loguru>=0.6.0,<0.8.0",
   "importlib-metadata>=5.0.0,<7.0.0",
-  "ruamel-yaml>=0.17.21,<0.18.0"
+  "ruamel-yaml>=0.17.21,<0.18.0",
+  "pipdeptree>=2.0.0,<3.0.0",
 ]
 
 [project.urls]
