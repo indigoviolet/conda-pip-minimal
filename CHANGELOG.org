@@ -1,4 +1,12 @@
 
+* 0.2.2
+
+- Add conda recipe
+- Add License MIT
+- Clean up and standardize .ignore from github python
+- remove /src root directory to python package as root dir
+- add floors and roofs for package limits and standarize for conda and pip
+
 * 0.2.1
 
 - Fix bug in version compatibility
